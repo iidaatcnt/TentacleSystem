@@ -96,17 +96,17 @@ class Leg {
     // 3. IK Chain Update
     const last = this.segments.length - 1;
 
-    // Anchor root to body
-    this.segments[0].x = bodyX;
-    this.segments[0].y = bodyY;
+    // Anchor root to 'shoulder' on the body perimeter
+    this.segments[0].x = worldHomeX;
+    this.segments[0].y = worldHomeY;
 
     // Constrain Tip to tipPos
     this.segments[last].x = this.tipPos.x;
     this.segments[last].y = this.tipPos.y;
 
     // Relaxation loop for IK
-    for (let r = 0; r < 3; r++) {
-      // Body to Tip (Root is fixed)
+    for (let r = 0; r < 5; r++) { // More iterations for stability
+      // Shoulder to Tip (Root is fixed)
       for (let i = 1; i <= last; i++) {
         const prev = this.segments[i - 1];
         const curr = this.segments[i];
@@ -117,11 +117,11 @@ class Leg {
         curr.x -= dx * diff * 0.5;
         curr.y -= dy * diff * 0.5;
       }
-      // Re-fix root
-      this.segments[0].x = bodyX;
-      this.segments[0].y = bodyY;
+      // Re-fix root to shoulder
+      this.segments[0].x = worldHomeX;
+      this.segments[0].y = worldHomeY;
 
-      // Tip to Body (Tip is fixed to world planted spot)
+      // Tip to Shoulder (Tip is fixed to world planted spot)
       for (let i = last - 1; i >= 0; i--) {
         const next = this.segments[i + 1];
         const curr = this.segments[i];
@@ -298,20 +298,31 @@ export default function Home() {
       ctx.translate(body.x, body.y);
       ctx.rotate(body.angle);
 
-      // Shadow / Mist around body
-      ctx.shadowBlur = 40;
-      ctx.shadowColor = 'rgba(0,0,0,0.5)';
+      // Deep shadow under the body
+      ctx.shadowBlur = 60;
+      ctx.shadowColor = 'rgba(0,0,0,0.8)';
 
-      // Silhouette body
-      ctx.fillStyle = '#111';
+      // Main Hull Structure
+      ctx.fillStyle = '#0a0a0a';
       ctx.beginPath();
-      ctx.ellipse(0, 0, 40, 30, 0, 0, Math.PI * 2);
+      ctx.ellipse(0, 0, 55, 45, 0, 0, Math.PI * 2);
       ctx.fill();
 
-      // Highlights
-      ctx.strokeStyle = 'rgba(255,255,255,0.1)';
-      ctx.lineWidth = 2;
+      // Sub-structure / Shell Detail
+      ctx.strokeStyle = 'rgba(255,255,255,0.08)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 50, 40, 0, 0, Math.PI * 2);
       ctx.stroke();
+
+      // Core glowing highlight
+      const pulse = Math.sin(time * 2) * 2;
+      ctx.shadowBlur = 10 + pulse;
+      ctx.shadowColor = 'rgba(255,255,255,0.2)';
+      ctx.fillStyle = '#1a1a1a';
+      ctx.beginPath();
+      ctx.arc(0, 0, 15 + pulse, 0, Math.PI * 2);
+      ctx.fill();
 
       ctx.restore();
 
@@ -356,8 +367,8 @@ export default function Home() {
                     key={sp}
                     onClick={() => setSpeedProfile(sp)}
                     className={`p-4 rounded-2xl border transition-all flex flex-col items-center gap-2 ${speedProfile === sp
-                        ? 'bg-white text-black border-white shadow-2xl'
-                        : 'bg-zinc-800/50 border-white/5 text-zinc-500 hover:border-white/10'
+                      ? 'bg-white text-black border-white shadow-2xl'
+                      : 'bg-zinc-800/50 border-white/5 text-zinc-500 hover:border-white/10'
                       }`}
                   >
                     {sp === 'slow' && <Wind size={20} />}
